@@ -1,29 +1,22 @@
 const express = require("express");
 const multer = require("multer");
+const sharp = require("sharp");
+
 const router = express.Router();
 const User = require("../models/users");
 const auth = require("../middlewares/auth");
+const mailer = require("../mailer/mailer");
 
 router.post("/users", async (req, res) => {
-  console.log(req.body);
   let user = new User(req.body);
   try {
     await user.save();
+    mailer.sendWelcomEmail(user.email, user.name);
     const token = await user.generateJWTToken();
-    console.log("token is ", token);
     res.status(201).send({ user, token });
   } catch (error) {
-    console.log(error);
     res.status(400).send({ error: error });
   }
-
-  // u.save().then((response) => {
-  //     console.log("Inserted succesfully ", response)
-  //     res.send({ response: "Inserted succesfully" })
-  // }).catch((err) => {
-  //     console.log(err)
-  //     res.status(400).send({ error: err })
-  // })
 });
 
 router.post("/users/login", async (req, res) => {
@@ -125,6 +118,7 @@ router.delete("/users/me", auth, async (req, res) => {
       id: req.user._id,
     });
     // await req.user.remove()
+    mailer.sendGoodByEmail(req.user.email, req.user.name);
     res.send(req.user);
   } catch (error) {
     console.log(error);
@@ -145,17 +139,39 @@ const avatars = multer({
   },
 });
 
-router.post("/user/me/avatar", auth, avatars.single("avatars"), async (req, res) => {
-    req.user.avatar = req.file.buffer;
-    console.log("req.user ==> ", req.user);
-    let res2 = await req.user.save();
-    console.log("Res => ", res2);
-
+router.post(
+  "/users/me/avatar",
+  auth,
+  avatars.single("avatars"),
+  async (req, res) => {
+    const buffer = await sharp(req.file.buffer)
+      .resize({ width: 100, height: 100 })
+      .png()
+      .toBuffer();
+    req.user.avatar = buffer;
+    await req.user.save();
     res.send();
   },
   (error, req, res, next) => {
     res.status(400).send({ error: error.message });
   }
 );
+
+router.delete("/users/me/avatar", auth, async (req, res) => {
+  req.user.avatar = undefined;
+  await req.user.save();
+  res.send();
+});
+
+router.get("/users/:id/avatar", async (req, res) => {
+  const user = await User.findById(req.params.id);
+
+  if (!user || !user.avatar) {
+    throw new Error("Avatar not found.");
+  }
+
+  res.set("Content-Type", "image/png");
+  res.send(user.avatar);
+});
 
 module.exports = router;

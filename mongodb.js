@@ -1,9 +1,6 @@
 const mongodb = require('mongodb')
 const { MongoClient , ObjectID } = mongodb
 
-// const MongoClient = mongodb.MongoClient
-// const ObjectID = mongodb.ObjectId
-
 const id = new ObjectID()
 
 console.log(id)

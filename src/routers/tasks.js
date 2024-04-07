@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const Task = require("../models/tasks");
 const auth = require("../middlewares/auth");
-const task = require("../models/tasks");
 
 router.post("/tasks", auth, async (req, res) => {
   // let user = new Task(req.body)
@@ -12,7 +11,7 @@ router.post("/tasks", auth, async (req, res) => {
   });
   try {
     await task.save();
-    res.status(200).send(task);
+    res.status(201).send(task);
   } catch (error) {
     res.status(400).send(error);
   }
@@ -136,11 +135,12 @@ router.delete("/tasks/:id", auth, async (req, res) => {
   try {
     const id = req.params.id;
     // const task = await Task.findByIdAndDelete(id)
-    const task = Task.findOneAndDelete({ _id: id, owner: req.user._id });
+    const task = await Task.findOneAndDelete({ _id: id, owner: req.user._id });
     if (!task) return res.status(404).send();
 
     res.send(task);
   } catch (error) {
+    console.log(error);
     res.status(500).send();
   }
 });

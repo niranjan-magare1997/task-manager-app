@@ -1,1 +1,5 @@
+// Ignore all node_modules while checking for any git operation like commit or push.
 node_modules
+
+// Should neven ever push or commit config files for security purpose.
+config/*

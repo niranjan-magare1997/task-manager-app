@@ -1,0 +1,3 @@
+test('Namaste JS', () => {
+    
+});
